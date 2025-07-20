@@ -25,12 +25,12 @@ const TaskManagement = () => {
     // eslint-disable-next-line
   }, [page]);
 
-  const fetchTasks = async () => {
+  const fetchTasks = async (pageToFetch = page) => {
     setLoading(true);
     setError('');
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`${API_BASE_URL}/api/tasks`, {
+      const res = await fetch(`${API_BASE_URL}/api/tasks?page=${pageToFetch}&limit=${TASKS_PER_PAGE}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -40,20 +40,18 @@ const TaskManagement = () => {
         throw new Error(data.message || 'Failed to fetch tasks');
       } else {
         setTasks(data.data);
-        setTotalPages(data.data.length > TASKS_PER_PAGE ? Math.ceil(data.data.length / TASKS_PER_PAGE) : 1);
+        setTotalPages(data.totalPages || 1);
       }
     } catch (err) {
-      console.warn('API not available, using mock data:', err.message);
-      // Fallback to mock data when API is not available
       setTasks([]);
       setTotalPages(1);
-      setError(''); // Clear error since we're using mock data
+      setError('');
     }
     setLoading(false);
   };
 
   // Paginate tasks client-side
-  const paginatedTasks = tasks.slice((page - 1) * TASKS_PER_PAGE, page * TASKS_PER_PAGE);
+  const paginatedTasks = tasks;
 
   const openModal = () => {
     setForm({ taskName: '', description: '', dueDate: '' });
@@ -569,7 +567,7 @@ const TaskManagement = () => {
       )}
 
       {/* Pagination */}
-      {!loading && !error && tasks.length > TASKS_PER_PAGE && (
+      {!loading && !error && tasks.length > 0 && totalPages > 1 && (
         <div style={styles.pagination}>
           <button 
             style={{
@@ -577,7 +575,7 @@ const TaskManagement = () => {
               ...(page === 1 ? styles.arrowBtnDisabled : {})
             }}
             disabled={page === 1} 
-            onClick={() => setPage(page - 1)}
+            onClick={() => { setPage(page - 1); fetchTasks(page - 1); }}
           >
             <ArrowBackIosIcon fontSize="inherit" />
           </button>
@@ -588,7 +586,7 @@ const TaskManagement = () => {
                 ...styles.pageBtn,
                 ...(page === i + 1 ? styles.activePage : {})
               }}
-              onClick={() => setPage(i + 1)}
+              onClick={() => { setPage(i + 1); fetchTasks(i + 1); }}
             >
               {i + 1}
             </span>
@@ -599,7 +597,7 @@ const TaskManagement = () => {
               ...(page === totalPages ? styles.arrowBtnDisabled : {})
             }}
             disabled={page === totalPages} 
-            onClick={() => setPage(page + 1)}
+            onClick={() => { setPage(page + 1); fetchTasks(page + 1); }}
           >
             <ArrowForwardIosIcon fontSize="inherit" />
           </button>

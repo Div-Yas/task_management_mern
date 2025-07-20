@@ -23,8 +23,24 @@ exports.createTask = async (req, res) => {
 
 exports.getTasks = async (req, res) => {
   try {
-    const tasks = await Task.find({ user: req.user.id }).sort({ createdAt: -1 });
-    res.json({ status: true, data: tasks, message: tasks.length ? 'Tasks fetched successfully' : 'No tasks found' });
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 3;
+    const skip = (page - 1) * limit;
+    const [tasks, total] = await Promise.all([
+      Task.find({ user: req.user.id })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit),
+      Task.countDocuments({ user: req.user.id })
+    ]);
+    res.json({
+      status: true,
+      data: tasks,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+      message: tasks.length ? 'Tasks fetched successfully' : 'No tasks found'
+    });
   } catch (err) {
     res.status(500).json({ status: false, data: null, message: 'Server error' });
   }
