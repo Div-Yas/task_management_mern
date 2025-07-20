@@ -59,7 +59,7 @@ const SignIn = () => {
         if (!res.ok) {
           setApiError(data.errors?.[0]?.msg || 'Login failed');
         } else {
-          localStorage.setItem('token', data.token);
+          localStorage.setItem('token', data.data.token);
           navigate('/tasks');
         }
       } catch (err) {
